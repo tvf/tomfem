@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-add_library(libtomfem tomfem.cpp)
+add_library(libtomfem tomfem.cpp solve_linear_system.cpp)
 target_include_directories(libtomfem PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(libtomfem Eigen3::Eigen)
 

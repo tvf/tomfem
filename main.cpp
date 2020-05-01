@@ -10,7 +10,7 @@ bool parse_boundary_condition(tomfem::BoundaryCondition *boundary_condition,
     int v1, v2;
     in >> v1 >> v2;
 
-    boundary_condition->boundary = {v1, v2};
+    boundary_condition->boundary = {--v1, --v2};
 
     std::string s;
     in >> s;
@@ -148,7 +148,7 @@ void write_solution(const tomfem::Mesh& mesh,
 
     for (size_t i = 0; i < bcs.size(); ++i) {
         out << "# boundary condition "
-            << bcs[i].boundary[0] << ' ' << bcs[i].boundary[1] << ' ';
+            << bcs[i].boundary[0] + 1 << ' ' << bcs[i].boundary[1] + 1 << ' ';
 
         std::visit(BoundaryConditionFormatter{out}, bcs[i].condition);
 
