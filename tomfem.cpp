@@ -29,9 +29,9 @@ void log_matrix(std::ostream& out, const Matrix& matrix) {
 
 // void check_solve_linear_system() {
 //
-//     //Matrix A { 3, 3, { 1, 2, 3,   4, 5, 6,   7, 8, 10 } };
+//     // Matrix A { 3, 3, { 1, 2, 3,   4, 5, 6,   7, 8, 10 } };
 //     Matrix A { 3, 2, { 1, 2,   3, 4,   5, 6 } };
-//     //Matrix A { 3, 3, { 0, 0, 0,   0, 0, 0,   0, 0, 0 } };
+//     // Matrix A { 3, 3, { 0, 0, 0,   0, 0, 0,   0, 0, 0 } };
 //     Matrix b { 3, 1, { 3,   3,   4 } };
 //
 //     Matrix solution = solve_linear_system(A, b);
@@ -43,8 +43,8 @@ void log_matrix(std::ostream& out, const Matrix& matrix) {
 //
 // [X] calculate stiffness matrix K from the mesh alone
 //
-// [ ] calculate the term from the Neumann boundary conditions
-// [ ] take the Dirichlet boundary conditions into account by doctoring K and f
+// [X] calculate the term from the Neumann boundary conditions
+// [X] take the Dirichlet boundary conditions into account by doctoring K and f
 //
 // [ ] calculate Kc according to any convection boundary conditions
 // [ ] calculate the term from the convection boundary conditions
@@ -196,6 +196,43 @@ void add_neumann_boundary_conditions(const Mesh& mesh,
     }
 }
 
+void fiddle_K_and_f_for_dirichlet_bcs(const BoundaryConditions& bcs,
+                                      Matrix *K,
+                                      Matrix *f) {
+
+    for (const BoundaryCondition& bc : bcs) {
+
+        const DirichletBoundaryCondition *dbc
+            = std::get_if<DirichletBoundaryCondition>(&(bc.condition));
+
+        if (!dbc) continue;
+
+        size_t i = bc.boundary[0];
+
+        // fiddle the row that would have an unknown in f (the ith)
+        f->at(i, 0) = dbc->temperature;
+        for (size_t j = 0; j < K->num_columns; ++j) {
+            K->at(i, j) = (i == j) ? 1 : 0;
+        }
+
+        i = bc.boundary[1];
+
+        // fiddle the row that would have an unknown in f (the ith)
+        f->at(i, 0) = dbc->temperature;
+        for (size_t j = 0; j < K->num_columns; ++j) {
+            K->at(i, j) = (i == j) ? 1 : 0;
+        }
+    }
+}
+
+// for checking against a model problem
+void add_magic_load_vector(Matrix *f) {
+    f->at(0, 0) += 30;
+    f->at(1, 0) += 15;
+    f->at(2, 0) += 30;
+    f->at(3, 0) += 15;
+}
+
 std::vector<float>
 solve_heat_equation(const Mesh& mesh,
                     const BoundaryConditions& boundary_conditions) {
@@ -205,13 +242,20 @@ solve_heat_equation(const Mesh& mesh,
     std::vector<float> result(n, 1.f);
 
     Matrix K = stiffness_matrix_linear_elements(mesh);
-    log_matrix(std::cout, K);
 
     Matrix f{n, 1, std::vector<float>(n, 0.f)};
     add_neumann_boundary_conditions(mesh, boundary_conditions, &f);
+    // add_magic_load_vector(&f);
+
+    fiddle_K_and_f_for_dirichlet_bcs(boundary_conditions, &K, &f);
+
+    log_matrix(std::cout, K);
     log_matrix(std::cout, f);
 
     //check_solve_linear_system();
+
+    Matrix solution = solve_linear_system(K, f);
+    log_matrix(std::cout, solution);
 
     return result;
 }
