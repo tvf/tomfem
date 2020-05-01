@@ -41,7 +41,7 @@ void log_matrix(std::ostream& out, const Matrix& matrix) {
 
 // For now assume D = I
 //
-// [ ] calculate stiffness matrix K from the mesh alone
+// [X] calculate stiffness matrix K from the mesh alone
 // [ ] calculate Kc according to any convection boundary conditions
 //
 // [ ] calculate the term from the Neumann boundary conditions
