@@ -1,7 +1,7 @@
 v 0 0 0
-v 10 0 0
-v 10 10 0
-v 0 10 0
+v 2 0 0
+v 2 1 0
+v 0 1 0
 f 1 2 3
 f 3 4 1
 # boundary condition 1 2 temperature 10
