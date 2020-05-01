@@ -94,6 +94,7 @@ Node grad_Ni(size_t i, const Mesh& mesh, const Element& e) {
 
     Node gradient = {-perp_to_ni.x, -perp_to_ni.y};
     float len_gradient = length(gradient);
+
     gradient.x /= len_gradient;
     gradient.y /= len_gradient;
     gradient.x /= len_gradient;
@@ -101,42 +102,6 @@ Node grad_Ni(size_t i, const Mesh& mesh, const Element& e) {
 
     return gradient;
 }
-
-//float calc_dNi_dx(size_t i, const Mesh& mesh, const Element& e) {
-//
-//    float xi = mesh.nodes[i].x;
-//    // find the vertex that's furthest away in x
-//
-//    float distance = 0.f;
-//    for (size_t v : e) {
-//        float distance_to_v_x =  xi - mesh.nodes[v].x;
-//        if (std::abs(distance_to_v_x) > std::abs(distance)) {
-//            distance = distance_to_v_x;
-//        }
-//    }
-//
-//    assert(distance != 0.f); // no degenerate triangles
-//
-//    return 1.f / distance;
-//}
-//
-//float calc_dNi_dy(size_t i, const Mesh& mesh, const Element& e) {
-//
-//    float yi = mesh.nodes[i].y;
-//    // find the vertex that's furthest away in x
-//
-//    float distance = 0.f;
-//    for (size_t v : e) {
-//        float distance_to_v_y =  yi - mesh.nodes[v].y;
-//        if (std::abs(distance_to_v_y) > std::abs(distance)) {
-//            distance = distance_to_v_y;
-//        }
-//    }
-//
-//    assert(distance != 0.f); // no degenerate triangles
-//
-//    return 1.f / distance;
-//}
 
 float area(Node v0, Node v1, Node v2) {
 
@@ -188,15 +153,6 @@ Matrix stiffness_matrix_linear_elements(const Mesh& mesh) {
                 float element_area = area(mesh.nodes[e[0]],
                                           mesh.nodes[e[1]],
                                           mesh.nodes[e[2]]);
-
-                if (i == 0 && j == 2) {
-                    std::cout << "dNi_dx " << dNi_d.x << '\n';
-                    std::cout << "dNi_dy " << dNi_d.y << '\n';
-                    std::cout << "dNj_dx " << dNj_d.x << '\n';
-                    std::cout << "dNj_dy " << dNj_d.y << '\n';
-                    std::cout << "value_on_element " << value_on_element << '\n';
-                    std::cout << "element_area " << element_area << '\n';
-                }
 
                 K.at(i, j) += value_on_element * element_area;
             }
