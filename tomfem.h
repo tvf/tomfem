@@ -22,12 +22,14 @@ using BoundaryElement = std::array<NodeIndex, 2>;
 // Return the boundary of the mesh.
 std::vector<BoundaryElement> boundary(const Mesh& mesh);
 
+// Hmm... some of these boundary conditions should just be for a point?
+
 struct DirichletBoundaryCondition {
-    float temperature[2];
+    float temperature;
 };
 
 struct NeumannBoundaryCondition {
-    float flux[2];
+    float flux;
 };
 
 struct ConvectionBoundaryCondition {
