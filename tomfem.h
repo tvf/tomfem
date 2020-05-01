@@ -8,7 +8,7 @@ namespace tomfem {
 
 struct Node { float x, y; };
 
-using NodeIndex = int;
+using NodeIndex = size_t;
 
 using Element = std::array<NodeIndex, 3>;
 

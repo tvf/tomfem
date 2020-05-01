@@ -42,11 +42,12 @@ void log_matrix(std::ostream& out, const Matrix& matrix) {
 // For now assume D = I
 //
 // [X] calculate stiffness matrix K from the mesh alone
-// [ ] calculate Kc according to any convection boundary conditions
 //
 // [ ] calculate the term from the Neumann boundary conditions
-// [ ] calculate the term from the convection boundary conditions
 // [ ] take the Dirichlet boundary conditions into account by doctoring K and f
+//
+// [ ] calculate Kc according to any convection boundary conditions
+// [ ] calculate the term from the convection boundary conditions
 //
 // [X] don't bother with the load vector for now but write a function for it
 // [X] solve linear system with Eigen
@@ -162,14 +163,53 @@ Matrix stiffness_matrix_linear_elements(const Mesh& mesh) {
     return K;
 }
 
+void add_neumann_boundary_conditions(const Mesh& mesh,
+                                     const BoundaryConditions& bcs,
+                                     Matrix *force_vector) {
+
+    assert(force_vector->num_rows == mesh.nodes.size());
+
+    // -integral (over bits of neumann boundary) ( Ni q )
+
+    for (const BoundaryCondition& bc : bcs) {
+
+        const NeumannBoundaryCondition *nbc
+            = std::get_if<NeumannBoundaryCondition>(&(bc.condition));
+
+        if (!nbc) continue;
+
+        for (size_t i = 0; i < mesh.nodes.size(); ++i) {
+            if (i == bc.boundary[0] || i == bc.boundary[1]) {
+
+                Node boundary_start = mesh.nodes[bc.boundary[0]];
+                Node boundary_end = mesh.nodes[bc.boundary[1]];
+
+                Node boundary_segment { boundary_end.x - boundary_start.x,
+                                        boundary_end.y - boundary_start.y };
+
+                float segment_length = length(boundary_segment);
+                float contribution = -0.5f * segment_length * nbc->flux;
+
+                force_vector->at(i, 0) += contribution;
+            }
+        }
+    }
+}
+
 std::vector<float>
 solve_heat_equation(const Mesh& mesh,
-                    const BoundaryConditions& /* boundary_conditions */) {
+                    const BoundaryConditions& boundary_conditions) {
 
-    std::vector<float> result(mesh.nodes.size(), 1.f);
+    size_t n = mesh.nodes.size();
+
+    std::vector<float> result(n, 1.f);
 
     Matrix K = stiffness_matrix_linear_elements(mesh);
     log_matrix(std::cout, K);
+
+    Matrix f{n, 1, std::vector<float>(n, 0.f)};
+    add_neumann_boundary_conditions(mesh, boundary_conditions, &f);
+    log_matrix(std::cout, f);
 
     //check_solve_linear_system();
 

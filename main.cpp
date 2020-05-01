@@ -7,7 +7,7 @@ namespace {
 
 bool parse_boundary_condition(tomfem::BoundaryCondition *boundary_condition,
                               std::istream& in) {
-    int v1, v2;
+    size_t v1, v2;
     in >> v1 >> v2;
 
     boundary_condition->boundary = {--v1, --v2};
@@ -78,7 +78,7 @@ int parse_mesh_and_boundary_conditions(tomfem::Mesh *mesh,
             } break;
 
             case 'f': {
-                int v1, v2, v3;
+                size_t v1, v2, v3;
                 in >> v1 >> v2 >> v3;
                 if (in.fail()) return line;
                 mesh->elements.push_back({--v1, --v2, --v3});
