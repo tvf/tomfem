@@ -46,11 +46,15 @@ void log_matrix(std::ostream& out, const Matrix& matrix) {
 // [X] calculate the term from the Neumann boundary conditions
 // [X] take the Dirichlet boundary conditions into account by doctoring K and f
 //
-// [ ] calculate Kc according to any convection boundary conditions
-// [ ] calculate the term from the convection boundary conditions
+// [X] calculate Kc according to any convection boundary conditions
+// [X] calculate the term from the convection boundary conditions
 //
 // [X] don't bother with the load vector for now but write a function for it
 // [X] solve linear system with Eigen
+//
+// [ ] make a rubbish heatsink and a good one
+//
+// [ ] make a thingie to refine the mesh so I don't have to type out the cases
 
 void add_load_vector(Matrix& f) {
     assert(f.num_columns == 1);
@@ -180,7 +184,6 @@ void add_neumann_boundary_conditions(const Mesh& mesh,
 
         for (size_t i = 0; i < mesh.nodes.size(); ++i) {
             if (i == bc.boundary[0] || i == bc.boundary[1]) {
-
                 Node boundary_start = mesh.nodes[bc.boundary[0]];
                 Node boundary_end = mesh.nodes[bc.boundary[1]];
 
@@ -225,6 +228,48 @@ void fiddle_K_and_f_for_dirichlet_bcs(const BoundaryConditions& bcs,
     }
 }
 
+void add_convection_boundary_conditions(const Mesh& mesh,
+                                        const BoundaryConditions& bcs,
+                                        Matrix *K,
+                                        Matrix *f) {
+
+    for (const BoundaryCondition& bc : bcs) {
+
+        const ConvectionBoundaryCondition *cbc
+            = std::get_if<ConvectionBoundaryCondition>(&(bc.condition));
+
+        if (!cbc) continue;
+
+        Node boundary_start = mesh.nodes[bc.boundary[0]];
+        Node boundary_end = mesh.nodes[bc.boundary[1]];
+        Node boundary_segment { boundary_end.x - boundary_start.x,
+                                boundary_end.y - boundary_start.y };
+        float segment_length = length(boundary_segment);
+
+        // add contribution to force vector
+        // integral along convecting boundary of alpha * T_inf * Ni at each i
+        for (size_t i = 0; i < mesh.nodes.size(); ++i) {
+            if (i == bc.boundary[0] || i == bc.boundary[1]) {
+                float alpha_T_inf = cbc->alpha * cbc->ambient_temperature;
+                float contribution = 0.5f * segment_length * alpha_T_inf;
+
+                f->at(i, 0) += contribution;
+            }
+        }
+
+        // add contribution to stiffness matrix
+        // integral along convecting boundary of alpha * Ni * Nj at each i, j
+        size_t i = bc.boundary[0];
+        size_t j = bc.boundary[1];
+
+        float integral_Ni_Nj_over_boundary
+            = 0.5f * segment_length + (segment_length * segment_length / 3.f);
+
+        K->at(i, j) += cbc->alpha * integral_Ni_Nj_over_boundary;
+        K->at(j, i) += cbc->alpha * integral_Ni_Nj_over_boundary;
+    }
+}
+
 // for checking against a model problem
 void add_magic_load_vector(Matrix *f) {
     f->at(0, 0) += 30;
@@ -239,25 +284,23 @@ solve_heat_equation(const Mesh& mesh,
 
     size_t n = mesh.nodes.size();
 
-    std::vector<float> result(n, 1.f);
-
     Matrix K = stiffness_matrix_linear_elements(mesh);
 
     Matrix f{n, 1, std::vector<float>(n, 0.f)};
     add_neumann_boundary_conditions(mesh, boundary_conditions, &f);
+    add_convection_boundary_conditions(mesh, boundary_conditions, &K, &f);
     // add_magic_load_vector(&f);
-
     fiddle_K_and_f_for_dirichlet_bcs(boundary_conditions, &K, &f);
 
-    log_matrix(std::cout, K);
-    log_matrix(std::cout, f);
+    log_matrix(std::cerr, K);
+    log_matrix(std::cerr, f);
 
     //check_solve_linear_system();
 
     Matrix solution = solve_linear_system(K, f);
-    log_matrix(std::cout, solution);
+    log_matrix(std::cerr, solution);
 
-    return result;
+    return solution.values;
 }
 
 } // namespace tomfem
