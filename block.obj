@@ -1,0 +1,10 @@
+v 0 0 0
+v 10 0 0
+v 10 10 0
+v 0 10 0
+f 1 2 3
+f 3 4 1
+# boundary condition 1 2 temperature 10
+# boundary condition 2 3 flux 0
+# boundary condition 3 4 flux 0
+# boundary condition 4 1 convection alpha 10 ambient 1
